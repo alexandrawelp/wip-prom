@@ -4,12 +4,16 @@ co-current and counter-current as boundary value problem
 
 author: Alexandra Welp
 """
+import sys
+sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
+
+
 
 import numpy as np
 import CoolProp.CoolProp as CP
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
-from .. import fluid_properties_rp as fprop
+import fluid_properties_rp as fprop
 from scipy.optimize import root
 import ht as ht
 

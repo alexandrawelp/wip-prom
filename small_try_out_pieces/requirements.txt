@@ -1,0 +1,4 @@
+ctREFPROP==0.10.2
+ctREFPROP==0.10.2
+matplotlib==3.7.1
+numpy==1.24.3

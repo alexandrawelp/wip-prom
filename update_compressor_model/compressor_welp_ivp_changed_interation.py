@@ -5,13 +5,15 @@ changed to use ODE solver instead of finite volume approach
 author: Alexandra Welp
 21.12.2022
 """
+import sys
+sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
 import os
-import carbatpy.fluid_properties_rp as fprop
+import fluid_properties_rp as fprop
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
 RP.SETPATHdll(os.environ['RPPREFIX'])
