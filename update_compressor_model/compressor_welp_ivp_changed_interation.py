@@ -235,8 +235,6 @@ def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     m_dot_out = 0
     return alp, m_dot_in, m_dot_out
 
-def bc(ya, yb):
-    return np.array([100000*yb[0] - 100000*ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
 if __name__ == "__main__":
     fluid = 'Isobutane'
