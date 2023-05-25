@@ -10,7 +10,6 @@ sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatp
 
 
 import numpy as np
-import CoolProp.CoolProp as CP
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 import fluid_properties_rp as fprop
