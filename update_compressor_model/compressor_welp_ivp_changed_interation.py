@@ -6,7 +6,7 @@ author: Alexandra Welp
 21.12.2022
 """
 import sys
-sys.path.insert(1, "C:/Users/alexa/sciebo2/Kollaboration/Carbatpy/carbatpy/carbatpy")
+sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -270,4 +270,3 @@ if __name__ == "__main__":
     print(result.message)
     #print(result.y)
     #plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
-    plt.show()
