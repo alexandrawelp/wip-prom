@@ -11,7 +11,7 @@ Created on Thu Jan 31 17:46:25 2019
 """
 
 import sys
-sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbaty/carbatpy")
+sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration")
 import numpy as np
 import matplotlib.pyplot as plt
 from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm

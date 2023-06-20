@@ -8,12 +8,14 @@ author: Alexandra Welp
 """
 import sys
 sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration")
-sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbaty/carbatpy")
+#sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbaty/carbatpy")
 import compressor_roskosch_orig_rp_aw as comros
 import numpy as np
 import compressor_welp_ivp_changed_interation as comwel
 import pytest
 import compressor_roskosch_orig_rp_june2023 as comros_orig
+import fl_props_compressor
+from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm, z_px
 
 def test_basic_script():
     IS = 360  # Anzahl der differentiellen Schritte für einen Zyklus
@@ -22,12 +24,12 @@ def test_basic_script():
     pZ = np.zeros(7, float)
     pZyk = np.zeros(2, float)
     z_it = np.zeros([IS, 16])
-    # fluid = []
-    comp = [1.0]  # must be checked BA
-    fluid = 'Propane * Butane'
+    fluid = "Propane * Butane"
     comp = [1.0, 0.]
-    pe = comros_orig.z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
-    pa = comros_orig.z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+    
+
+    pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+    pa = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
     dt_all = np.linspace(9.5, 20.5, 3)
     out = []
     pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
@@ -101,3 +103,27 @@ def test_overall_script_welp():
     assert (round(out[1][1], 3) == round(actual_out[1][1], 3))
     assert (round(out[2][0], 3) == round(actual_out[2][0], 3))
     assert (round(out[2][1], 3) == round(actual_out[2][1], 3))
+    
+if __name__ == "__main__":
+    fluid = 'Propane * Butane'
+    comp = [1.0, 0.]
+    #x0=.25
+    #x1 = 1-x0 
+    #comp = [x0, x1, 1-x0-x1]
+    pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+    pa =  z_Tx(355, 0, fluid, comp)[1] # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+   
+    
+    fo = open("Daten.txtx","w")
+    print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
+    dt_all=np.linspace(9.5, 20.5, 3)
+    out=[]
+    for dt in dt_all:
+        o1 = comros_orig.getETA(dt + 273.15, pe, pa, fluid, comp)
+        #o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
+        out.append(o1)
+        print(dt, o1)
+    out = np.array(out)
+    #plt.plot(dt_all, out)
+    fo.write(str(out))
+    fo.close()
