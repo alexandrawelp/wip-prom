@@ -14,27 +14,29 @@ class CarnotBattery:
     
 class HeatPump(CarnotBattery):
     def __init__(self, hp_definition, hp_conditions, hp_working_fluid, hp_case_specific):
-        self.compressor = hp_definition('hp_compressor')
-        self.expander = hp_definition('hp_expander')
-        self.heat_exchanger_HT = hp_definition('heat_exchanger_HT')
-        self.heat_exchanger_LT = hp_definition('heat_exchanger_LT')
-        self.storage_LT = hp_definition('storage_LT')
-        self.storage_HT = hp_definition('storage_HT')
-        self.fluid_model = fluid_props.FluidModel(hp_working_fluid('fluid'))
-        self.working_fluid = fluid_props.Fluid(self.fluid_model, hp_working_fluid('comp'))
+        self.compressor = hp_definition['compressor']
+        self.expander = hp_definition['expander']
+        self.heat_exchanger_HT = hp_definition['heat_exchanger_HT']
+        self.heat_exchanger_LT = hp_definition['heat_exchanger_LT']
+        self.storage_LT = hp_definition['storage_LT']
+        self.storage_HT = hp_definition['storage_HT']
+        self.fluid_model = fluid_props.FluidModel(hp_working_fluid['fluid'])
+        self.working_fluid = fluid_props.Fluid(self.fluid_model, hp_working_fluid['comp'])
         
         
     def set_up(self, hp_conditions):
         self.compressor.inlet = self.working_fluid.set_state(
-            [hp_conditions('compressor_inlet_temperature'), 
-             hp_conditions('compressor_inlet_pressure')], 'TP')
+            [hp_conditions['compressor_inlet_temperature'], 
+             hp_conditions['compressor_inlet_pressure']], 'TP')
         self.call_compressor()
         
         
     
     def call_compressor(self, hp_case_specific):
+        # choice of different compressor models
         if self.compressor == 'compressor_constant_is_eff':
             self.compressor_constant_is_eff()
+            
             
     def call_ht_storage(self, hp_case_specific):
         if self.storage_HT == 'sensible_one_tank':
@@ -53,6 +55,7 @@ class HeatPump(CarnotBattery):
                 hp_case_specific('compressor_is_efficiency') + self.compressor.inlet.enthalpy
         self.compressor.outlet = self.working_fluid.set_state(
             [p_outlet, h_outlet], 'PH')
+        return self.compressor.outlet
         
         
         
@@ -86,5 +89,5 @@ if __name__ == '__main__':
         'HT_outlet_pressure' : 10e5
         }
     
-    
+    test1 = HeatPump(hp_definition, hp_conditions, hp_working_fluid, hp_case_specific)
     # connecting parts
