@@ -29,7 +29,7 @@ class HeatPump(CarnotBattery):
             [hp_conditions['compressor_inlet_temperature'],
              hp_conditions['compressor_inlet_pressure']], 'TP')
         self.compressor_inlet = self.working_fluid.properties
-        self.call_compressor()
+        #self.call_compressor()
         
         
     

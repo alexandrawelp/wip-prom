@@ -47,7 +47,8 @@ def hp_conditions():
 
 @pytest.fixture
 def dummy():
-    dummy_cb = HeatPump(hp_definition, hp_conditions, hp_working_fluid, hp_case_specific)
+    dummy_cb = HeatPump(hp_definition, hp_conditions, hp_working_fluid, 
+                        hp_case_specific)
     return dummy_cb
 
 def test_initialization(dummy):
@@ -57,8 +58,11 @@ def test_initialization(dummy):
     
 def test_set_up(dummy, hp_conditions):
     dummy.set_up(hp_conditions)
-    assert dummy.compressor_inlet.temperature == pytest.approx(hp_conditions['compressor_inlet_temperature'])
-    assert dummy.compressor_inlet.pressure == pytest.approx(hp_conditions['compressor_inlet_pressure'])
+    assert dummy.compressor_inlet.temperature == pytest.approx(
+        hp_conditions['compressor_inlet_temperature'])
+    assert dummy.compressor_inlet.pressure == pytest.approx(
+        hp_conditions['compressor_inlet_pressure'])
+    assert dummy.compressor_inlet.enthalpy == pytest.approx(423610,rel=1e-3)
     
     
 def test_compressor_constant_is_eff(dummy, hp_case_specific, hp_conditions):
@@ -67,5 +71,8 @@ def test_compressor_constant_is_eff(dummy, hp_case_specific, hp_conditions):
          hp_conditions['compressor_inlet_pressure']], 'TP')
     dummy.compressor_inlet = dummy.working_fluid.properties
     dummy.compressor_constant_is_eff(hp_case_specific, hp_conditions)
+    assert dummy.compressor_outlet.pressure == pytest.approx(hp_conditions[
+        'compressor_inlet_pressure'] * hp_conditions['compressor_pressure_ratio'])
+    assert dummy.compressor_outlet.enthalpy == pytest.approx(515198,rel=1e-3)
     
     
