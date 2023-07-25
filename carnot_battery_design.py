@@ -25,9 +25,10 @@ class HeatPump(CarnotBattery):
         
         
     def set_up(self, hp_conditions):
-        self.compressor.inlet = self.working_fluid.set_state(
-            [hp_conditions['compressor_inlet_temperature'], 
+        self.working_fluid.set_state(
+            [hp_conditions['compressor_inlet_temperature'],
              hp_conditions['compressor_inlet_pressure']], 'TP')
+        self.compressor_inlet = self.working_fluid.properties
         self.call_compressor()
         
         
@@ -45,17 +46,20 @@ class HeatPump(CarnotBattery):
                 
                 
             
-    def compressor_constant_is_eff(self, hp_case_specific):
-        s_outlet_is = self.compressor.inlet.entropy
-        p_outlet = hp_conditions('compressor_inlet_pressure') *\
-                    hp_conditions('compressor_pressure_ratio')
-        self.compressor.outlet.isentropic = self.working_fluid.set_state(
-            [p_outlet, s_outlet_is], 'PS')
-        h_outlet = (self.compressor.outlet.isentropic.enthalpy - self.compressor.inlet.enthalpy) / \
-                hp_case_specific('compressor_is_efficiency') + self.compressor.inlet.enthalpy
-        self.compressor.outlet = self.working_fluid.set_state(
+    def compressor_constant_is_eff(self, hp_case_specific, hp_conditions):
+        s_outlet_is = self.compressor_inlet.entropy
+        p_outlet = hp_conditions['compressor_inlet_pressure'] *\
+                    hp_conditions['compressor_pressure_ratio']
+        
+        self.working_fluid.set_state(
+            [s_outlet_is, p_outlet], 'SP')
+        self.compressor_outlet_isentropic = self.working_fluid.properties
+        h_outlet = (self.compressor_outlet_isentropic.enthalpy - self.compressor_inlet.enthalpy) / \
+                hp_case_specific['compressor_is_efficiency'] + self.compressor_inlet.enthalpy
+        self.working_fluid.set_state(
             [p_outlet, h_outlet], 'PH')
-        return self.compressor.outlet
+        self.compressor_outlet = self.working_fluid.properties
+        return self.compressor_outlet
         
         
         
@@ -72,7 +76,7 @@ if __name__ == '__main__':
     
     hp_conditions = {
         'compressor_inlet_temperature' : 298.15,
-        'compressor_inlet_pressure' : 10e5,
+        'compressor_inlet_pressure' : 1e5,
         'compressor_pressure_ratio' : 6
         }
     
@@ -90,4 +94,5 @@ if __name__ == '__main__':
         }
     
     test1 = HeatPump(hp_definition, hp_conditions, hp_working_fluid, hp_case_specific)
+    test1.set_up(hp_conditions)
     # connecting parts

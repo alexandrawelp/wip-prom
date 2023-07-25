@@ -18,11 +18,7 @@ hp_definition = {
     'storage_HT' : 'sensible_one_tank'
     }
 
-hp_conditions = {
-    'compressor_inlet_temperature' : 298.15,
-    'compressor_inlet_pressure' : 10e5,
-    'compressor_pressure_ratio' : 6
-    }
+
 
 hp_working_fluid = {
     'fluid' : 'Propane * Pentane',
@@ -40,6 +36,15 @@ def hp_case_specific():
     }
     return hp_case_specific
 
+@pytest.fixture 
+def hp_conditions():
+    hp_conditions = {
+        'compressor_inlet_temperature' : 298.15,
+        'compressor_inlet_pressure' : 1e5,
+        'compressor_pressure_ratio' : 6
+        }
+    return hp_conditions
+
 @pytest.fixture
 def dummy():
     dummy_cb = HeatPump(hp_definition, hp_conditions, hp_working_fluid, hp_case_specific)
@@ -50,8 +55,17 @@ def test_initialization(dummy):
     assert dummy.working_fluid.composition == [0.4, 0.6]
     assert dummy.expander == "isenthalp_throttle"
     
+def test_set_up(dummy, hp_conditions):
+    dummy.set_up(hp_conditions)
+    assert dummy.compressor_inlet.temperature == pytest.approx(hp_conditions['compressor_inlet_temperature'])
+    assert dummy.compressor_inlet.pressure == pytest.approx(hp_conditions['compressor_inlet_pressure'])
     
-def test_compressor_constant_is_eff(dummy, hp_case_specific):
-    dummy.compressor_constant_is_eff(hp_case_specific)
+    
+def test_compressor_constant_is_eff(dummy, hp_case_specific, hp_conditions):
+    dummy.working_fluid.set_state(
+        [hp_conditions['compressor_inlet_temperature'],
+         hp_conditions['compressor_inlet_pressure']], 'TP')
+    dummy.compressor_inlet = dummy.working_fluid.properties
+    dummy.compressor_constant_is_eff(hp_case_specific, hp_conditions)
     
     
