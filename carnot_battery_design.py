@@ -32,7 +32,7 @@ class HeatPump(CarnotBattery):
     def set_up(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
         part_comp = Compressor(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
         return part_comp
-        #self.call_compressor()
+        
                 
 ##############################################################################
 class HeatExchanger(HeatPump):
@@ -69,10 +69,11 @@ class Storage(HeatPump):
 
 ##############################################################################                
 class Expander(HeatPump):
-    def __init__(self, inlet_state, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
+    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
         HeatPump.__init__(self,  hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
-        self.inlet = inlet_state
         
+    def input_expander(self, inlet_state):
+        self.inlet = inlet_state
         
     def call_expander(self):
         # choice of expander

@@ -5,6 +5,7 @@ Created on Mon Jul 24 14:28:03 2023
 @author: welp
 """
 import pytest
+import fluid_props
 #import os, sys
 #sys.path.append(os.path.join(os.path.dirname(__file__)))
 from carnot_battery_design import *
@@ -60,6 +61,11 @@ def dummy_hp(hp_definition, compressor_conditions, hp_working_fluid,
 def dummy_comp(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
     dummy = Compressor(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
     return dummy
+
+@pytest.fixture 
+def dummy_expa(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
+    dummy = Expander(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    return dummy
     
 def test_initialization(dummy_hp):
     assert dummy_hp.fluid_model.fluid == 'Propane * Pentane'
@@ -74,11 +80,18 @@ def test_set_up(dummy_hp, hp_definition, compressor_conditions, hp_working_fluid
         compressor_conditions['inlet_pressure'])
     assert part_comp.inlet.enthalpy == pytest.approx(423610,rel=1e-3)
     
-    
 def test_compressor_constant_is_eff(dummy_comp, hp_case_specific, compressor_conditions):
     dummy_comp.compressor_constant_is_eff(hp_case_specific)
     assert dummy_comp.outlet.pressure == pytest.approx(compressor_conditions[
         'inlet_pressure'] * compressor_conditions['pressure_ratio'])
     assert dummy_comp.outlet.enthalpy == pytest.approx(515198,rel=1e-3)
+    
+def test_isenthalpic_throttle(dummy_expa, hp_working_fluid):
+    fluid_model = fluid_props.FluidModel(hp_working_fluid['fluid'])
+    working_fluid = fluid_props.Fluid(fluid_model, hp_working_fluid['comp'])
+    working_fluid.set_state([295., 6e5], 'TP')
+    inlet_state = working_fluid.properties
+    dummy_expa.input_expander(inlet_state)
+    dummy_expa.isenthalp_throttle()
     
     
