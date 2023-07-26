@@ -5,15 +5,19 @@ general structure of Carnot battery
 @author: alexa
 """
 import fluid_props
-
-
+from scipy.integrate import solve_bvp
+import numpy as np
+import sys
+sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
+import fluid_properties_rp as fprop
 
 class CarnotBattery:
     def __init__(self, name):
         self.name == name
 ##############################################################################    
 class HeatPump(CarnotBattery):
-    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
+    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, 
+                 hp_case_specific):
         self.compressor = hp_definition['compressor']
         self.expander = hp_definition['expander']
         self.heat_exchanger_HT = hp_definition['heat_exchanger_HT']
@@ -23,23 +27,33 @@ class HeatPump(CarnotBattery):
         self.lower_pressure = compressor_conditions['inlet_pressure']
         self.pressure_ratio = compressor_conditions['pressure_ratio']
         self.higher_pressure = self.lower_pressure * self.pressure_ratio
-        self.fluid = hp_working_fluid['fluid']
+        self.fluid_name = hp_working_fluid['fluid']
         self.comp = hp_working_fluid['comp']
-        self.fluid_model = fluid_props.FluidModel(self.fluid)
+        self.fluid_model = fluid_props.FluidModel(self.fluid_name)
         self.working_fluid = fluid_props.Fluid(self.fluid_model, self.comp)
+        self.mdot = hp_definition['mass_flow']
         
         
-    def set_up(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
-        part_comp = Compressor(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    def set_up(self, hp_definition, compressor_conditions, hp_working_fluid, 
+               hp_case_specific):
+        part_comp = Compressor(hp_definition, compressor_conditions, 
+                               hp_working_fluid, hp_case_specific)
         return part_comp
         
                 
 ##############################################################################
 class HeatExchanger(HeatPump):
-    def __init__(self):
-        HeatPump.__init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
-        self.inlet_temperature = 11
-        self.inlet_pressure = 1
+    def __init__(self, he_conditions, hp_secondary_fluid, hp_definition, 
+                 compressor_conditions, hp_working_fluid, hp_case_specific):
+        HeatPump.__init__(self, hp_definition, compressor_conditions, 
+                          hp_working_fluid, hp_case_specific)
+        self.length = he_conditions['length']
+        self.di = he_conditions['inner_diameter']
+        self.alpha = he_conditions['alpha']
+        self.sf_name = hp_secondary_fluid['fluid']
+        self.sf_model = fluid_props.FluidModel(self.sf_name)
+        self.secondary_fluid = fluid_props.Fluid(self.sf_model)
+        self.sf_mdot = he_conditions['mass_flow']
         
     def call_heat_exchanger(self, hp_case_specific):
         # choice of heat exchanger
@@ -47,11 +61,56 @@ class HeatExchanger(HeatPump):
             self.double_tube_he_counterflow()
         else:
             raise NameError('heat exchanger model not implemented')
+    
+    def input_heat_exchanger(self, inlet_wf, inlet_sf):
+        self.inlet = inlet_wf 
+        self.sf_inlet = inlet_sf
+        
+    def he_counter_current(self, resolution=100):
+        def heat_exchanger_counter_current(x, h, p1, p2, fluid_1, fluid_2, comp, 
+                                           di, alpha_local, m_dot_1, m_dot_2):
+            T_AF = fprop.hp_v(h[0], p1, fluid_1, comp)[0]
+            T_SF = fprop.hp_v(h[1], p2, fluid_2)[0]
+            delta_T = T_AF - T_SF
+            dhdx_0 = -np.pi * di * alpha_local * delta_T / m_dot_1
+            dhdx_1 = -np.pi * di * alpha_local * delta_T / m_dot_2
+            return np.array([dhdx_0, dhdx_1])
+
+        def bc_he_counter(hlinks, hrechts):
+            return np.array([hlinks[0]-self.inlet.enthalpy, 
+                             hrechts[1]-self.sf_inlet.enthalpy])
+        
+        p_KM = self.inlet.pressure
+        p_W = self.sf_inlet.pressure
+        fluid_1 = self.fluid_name
+        fluid_2 = self.sf_name
+        comp = self.comp        
+        di = self.di
+        alpha_local = self.alpha
+        m_dot_1 = self.mdot
+        m_dot_2 = self.sf_mdot
+        x_var = np.linspace(0, self.length, resolution)
+        h_schaetz = np.zeros((2, resolution))
+        h_schaetz[0, :] = self.inlet.enthalpy
+        h_schaetz[1, :] = self.sf_inlet.enthalpy
+        res = solve_bvp(lambda x, h: heat_exchanger_counter_current(x, h, p_KM, 
+                        p_W, fluid_1, fluid_2, comp, di, alpha_local, m_dot_1, 
+                        m_dot_2), bc_he_counter, x_var, h_schaetz)
+        
+        if res.message != "The algorithm converged to the desired accuracy.":
+            print(res.message)
+            raise ValueError("The solver did not converge.")
+            
+        self.working_fluid.set_state([res.y[0,-1], self.inlet.pressure], 'HP')
+        self.outlet = self.working_fluid.properties 
+        self.secondary_fluid.set_state([res.y[1,-1], self.sf_inlet.pressure], 'HP')
+        self.sf_outlet = self.secondary_fluid.properties
             
 ##############################################################################
 class Storage(HeatPump):
     def __init__(self):
-        HeatPump.__init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+        HeatPump.__init__(self, hp_definition, compressor_conditions, 
+                          hp_working_fluid, hp_case_specific)
         
     def call_storage(self, temperature_level):
         # choice of storage
@@ -69,8 +128,10 @@ class Storage(HeatPump):
 
 ##############################################################################                
 class Expander(HeatPump):
-    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
-        HeatPump.__init__(self,  hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, 
+                 hp_case_specific):
+        HeatPump.__init__(self,  hp_definition, compressor_conditions, 
+                          hp_working_fluid, hp_case_specific)
         
     def input_expander(self, inlet_state):
         self.inlet = inlet_state
@@ -90,8 +151,10 @@ class Expander(HeatPump):
         
 ##############################################################################
 class Compressor(HeatPump):
-    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
-        HeatPump.__init__(self, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    def __init__(self, hp_definition, compressor_conditions, hp_working_fluid, 
+                 hp_case_specific):
+        HeatPump.__init__(self, hp_definition, compressor_conditions, 
+                          hp_working_fluid, hp_case_specific)
         self.inlet_temperature = compressor_conditions['inlet_temperature']
         self.inlet_pressure = compressor_conditions['inlet_pressure']
         self.pressure_ratio = compressor_conditions['pressure_ratio']
@@ -126,7 +189,8 @@ if __name__ == '__main__':
         'heat_exchanger_HT' : 'double_tube_he_counterflow',
         'storage_LT' : 'sensible_two_tank',
         'heat_exchanger_LT' : 'double_tube_he_counterflow',
-        'storage_HT' : 'sensible_two_tank'
+        'storage_HT' : 'sensible_two_tank',
+        'mass_flow' : 10e-3
         }
     
     compressor_conditions = {
@@ -140,6 +204,19 @@ if __name__ == '__main__':
         'comp' : [0.4, 0.6]
         }
     
+    hp_secondary_fluid = {
+        'fluid' : 'Water',
+        'inlet_temperature' : 285., 
+        'inlet_pressure' : 1e5
+        }
+    
+    he_HT_conditions = {
+        'length' : 6.,
+        'inner_diameter' : 12e-3,
+        'alpha' : 600.,
+        'mass flow' : 0.1
+        }
+    
     # case specific conditions
     hp_case_specific = {
         'compressor_is_efficiency' : 0.8,
@@ -148,7 +225,9 @@ if __name__ == '__main__':
         'HT_outlet_pressure' : 10e5
         }
     
-    test1 = HeatPump(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    test1 = HeatPump(hp_definition, compressor_conditions, hp_working_fluid, 
+                     hp_case_specific)
     #test1.set_up(hp_conditions)
-    test2 = Compressor(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    test2 = Compressor(hp_definition, compressor_conditions, hp_working_fluid, 
+                       hp_case_specific)
     # connecting parts
