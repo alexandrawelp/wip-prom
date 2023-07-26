@@ -43,7 +43,7 @@ class HeatExchanger(HeatPump):
         
     def call_heat_exchanger(self, hp_case_specific):
         # choice of heat exchanger
-        if HeatPump.heat_exchanger_HT == 'double_tube_he_counterflow':
+        if self.heat_exchanger_HT == 'double_tube_he_counterflow':
             self.double_tube_he_counterflow()
         else:
             raise NameError('heat exchanger model not implemented')
@@ -56,13 +56,13 @@ class Storage(HeatPump):
     def call_storage(self, temperature_level):
         # choice of storage
         if temperature_level == 'HT':
-            if HeatPump.storage_HT == 'sensible_two_tank':
+            if self.storage_HT == 'sensible_two_tank':
                 self.sensible_two_tank()
             else:
                 raise NameError('storage model not implemented')
                 
         if temperature_level == 'LT':
-            if HeatPump.storage_LT == 'sensible_two_tank':
+            if self.storage_LT == 'sensible_two_tank':
                 self.sensible_two_tank()
             else:
                 raise NameError('storage model not implemented')
@@ -77,7 +77,7 @@ class Expander(HeatPump):
         
     def call_expander(self):
         # choice of expander
-        if HeatPump.expander == 'isenthalp_throttle':
+        if self.expander == 'isenthalp_throttle':
             self.isenthalp_throttle()
         else:
             raise ValueError('expander not implemented')
@@ -102,7 +102,7 @@ class Compressor(HeatPump):
         
     def call_compressor(self, hp_case_specific):
         # choice of different compressor models
-        if HeatPump.compressor == 'compressor_constant_is_eff':
+        if self.compressor == 'compressor_constant_is_eff':
             self.compressor_constant_is_eff(hp_case_specific)
         else:
             raise NameError('compressor model not implemented')
