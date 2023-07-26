@@ -9,21 +9,25 @@ import pytest
 #sys.path.append(os.path.join(os.path.dirname(__file__)))
 from carnot_battery_design import *
 
-hp_definition = {
-    'compressor' : 'compressor_constant_is_eff',
-    'expander' : 'isenthalp_throttle',
-    'heat_exchanger_HT' : 'double_tube_he_counterflow',
-    'storage_LT' : 'sensible_one_tank',
-    'heat_exchanger_LT' : 'double_tube_he_counterflow',
-    'storage_HT' : 'sensible_one_tank'
-    }
+@pytest.fixture
+def hp_definition():
+    hp_definition = {
+        'compressor' : 'compressor_constant_is_eff',
+        'expander' : 'isenthalp_throttle',
+        'heat_exchanger_HT' : 'double_tube_he_counterflow',
+        'storage_LT' : 'sensible_one_tank',
+        'heat_exchanger_LT' : 'double_tube_he_counterflow',
+        'storage_HT' : 'sensible_one_tank'
+        }
+    return hp_definition
 
-
-
-hp_working_fluid = {
-    'fluid' : 'Propane * Pentane',
-    'comp' : [0.4, 0.6]
-    }
+@pytest.fixture
+def hp_working_fluid():
+    hp_working_fluid = {
+        'fluid' : 'Propane * Pentane',
+        'comp' : [0.4, 0.6]
+        }
+    return hp_working_fluid
 
 # case specific conditions
 @pytest.fixture
@@ -37,42 +41,44 @@ def hp_case_specific():
     return hp_case_specific
 
 @pytest.fixture 
-def hp_conditions():
-    hp_conditions = {
-        'compressor_inlet_temperature' : 298.15,
-        'compressor_inlet_pressure' : 1e5,
-        'compressor_pressure_ratio' : 6
+def compressor_conditions():
+    compressor_conditions = {
+        'inlet_temperature' : 298.15,
+        'inlet_pressure' : 1e5,
+        'pressure_ratio' : 6
         }
-    return hp_conditions
+    return compressor_conditions
 
 @pytest.fixture
-def dummy():
-    dummy_cb = HeatPump(hp_definition, hp_conditions, hp_working_fluid, 
+def dummy_hp(hp_definition, compressor_conditions, hp_working_fluid, 
+                    hp_case_specific):
+    dummy = HeatPump(hp_definition, compressor_conditions, hp_working_fluid, 
                         hp_case_specific)
-    return dummy_cb
+    return dummy
 
-def test_initialization(dummy):
-    assert dummy.fluid_model.fluid == 'Propane * Pentane'
-    assert dummy.working_fluid.composition == [0.4, 0.6]
-    assert dummy.expander == "isenthalp_throttle"
+@pytest.fixture 
+def dummy_comp(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
+    dummy = Compressor(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    return dummy
     
-def test_set_up(dummy, hp_conditions):
-    dummy.set_up(hp_conditions)
-    assert dummy.compressor_inlet.temperature == pytest.approx(
-        hp_conditions['compressor_inlet_temperature'])
-    assert dummy.compressor_inlet.pressure == pytest.approx(
-        hp_conditions['compressor_inlet_pressure'])
-    assert dummy.compressor_inlet.enthalpy == pytest.approx(423610,rel=1e-3)
+def test_initialization(dummy_hp):
+    assert dummy_hp.fluid_model.fluid == 'Propane * Pentane'
+    assert dummy_hp.working_fluid.composition == [0.4, 0.6]
+    assert dummy_hp.expander == "isenthalp_throttle"
+    
+def test_set_up(dummy_hp, hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific):
+    part_comp = dummy_hp.set_up(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+    assert part_comp.inlet.temperature == pytest.approx(
+        compressor_conditions['inlet_temperature'])
+    assert part_comp.inlet.pressure == pytest.approx(
+        compressor_conditions['inlet_pressure'])
+    assert part_comp.inlet.enthalpy == pytest.approx(423610,rel=1e-3)
     
     
-def test_compressor_constant_is_eff(dummy, hp_case_specific, hp_conditions):
-    dummy.working_fluid.set_state(
-        [hp_conditions['compressor_inlet_temperature'],
-         hp_conditions['compressor_inlet_pressure']], 'TP')
-    dummy.compressor_inlet = dummy.working_fluid.properties
-    dummy.compressor_constant_is_eff(hp_case_specific, hp_conditions)
-    assert dummy.compressor_outlet.pressure == pytest.approx(hp_conditions[
-        'compressor_inlet_pressure'] * hp_conditions['compressor_pressure_ratio'])
-    assert dummy.compressor_outlet.enthalpy == pytest.approx(515198,rel=1e-3)
+def test_compressor_constant_is_eff(dummy_comp, hp_case_specific, compressor_conditions):
+    dummy_comp.compressor_constant_is_eff(hp_case_specific)
+    assert dummy_comp.outlet.pressure == pytest.approx(compressor_conditions[
+        'inlet_pressure'] * compressor_conditions['pressure_ratio'])
+    assert dummy_comp.outlet.enthalpy == pytest.approx(515198,rel=1e-3)
     
     
