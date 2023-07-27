@@ -36,25 +36,27 @@ class HeatPump(CarnotBattery):
         
     def set_up(self, hp_definition, compressor_conditions, hp_working_fluid, 
                hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT):
-        part_comp = Compressor(hp_definition, compressor_conditions, 
+        self.part_comp = Compressor(hp_definition, compressor_conditions, 
                                hp_working_fluid, hp_case_specific)
-        part_comp.call_compressor(hp_case_specific)
-        part_he_HT = HeatExchanger(he_HT_conditions, hp_secondary_fluid_HT, hp_definition, 
+        self.part_comp.call_compressor(hp_case_specific)
+        self.part_he_HT = HeatExchanger(he_HT_conditions, hp_secondary_fluid_HT, hp_definition, 
                      compressor_conditions, hp_working_fluid, hp_case_specific)
-        part_he_HT.secondary_fluid.set_state([hp_secondary_fluid_HT['inlet_temperature'], 
+        self.part_he_HT.secondary_fluid.set_state([hp_secondary_fluid_HT['inlet_temperature'], 
                                         hp_secondary_fluid_HT['inlet_pressure']], 'TP')
-        part_he_HT.input_heat_exchanger(part_comp.outlet, part_he_HT.secondary_fluid.properties)
-        part_he_HT.call_heat_exchanger(hp_case_specific)
-        part_throttle = Expander(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
-        part_throttle.input_expander(part_he_HT.outlet)
-        part_throttle.call_expander()
-        part_he_LT = HeatExchanger(he_LT_conditions, hp_secondary_fluid_LT, hp_definition, 
+        self.part_he_HT.input_heat_exchanger(self.part_comp.outlet, self.part_he_HT.secondary_fluid.properties)
+        self.part_he_HT.call_heat_exchanger(hp_case_specific)
+        self.part_throttle = Expander(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+        self.part_throttle.input_expander(self.part_he_HT.outlet)
+        self.part_throttle.call_expander()
+        self.part_he_LT = HeatExchanger(he_LT_conditions, hp_secondary_fluid_LT, hp_definition, 
                      compressor_conditions, hp_working_fluid, hp_case_specific)
-        part_he_LT.secondary_fluid.set_state([hp_secondary_fluid_LT['inlet_temperature'], 
+        self.part_he_LT.secondary_fluid.set_state([hp_secondary_fluid_LT['inlet_temperature'], 
                                         hp_secondary_fluid_LT['inlet_pressure']], 'TP')
-        part_he_LT.input_heat_exchanger(part_throttle.outlet, part_he_LT.secondary_fluid.properties)
-        part_he_LT.call_heat_exchanger(hp_case_specific)
-        return part_comp, part_he_HT, part_throttle, part_he_LT
+        self.part_he_LT.input_heat_exchanger(self.part_throttle.outlet, self.part_he_LT.secondary_fluid.properties)
+        self.part_he_LT.call_heat_exchanger(hp_case_specific)
+    
+    
+        
         
                 
 ##############################################################################

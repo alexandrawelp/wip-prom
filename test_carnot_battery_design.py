@@ -127,14 +127,14 @@ def test_initialization(dummy_hp):
     
 def test_set_up(dummy_hp, hp_definition, compressor_conditions, hp_working_fluid, 
                 hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT):
-    part_comp, part_he_HT, part_throttle, part_he_LT= dummy_hp.set_up(hp_definition, compressor_conditions, hp_working_fluid, 
+    dummy_hp.set_up(hp_definition, compressor_conditions, hp_working_fluid, 
                hp_case_specific, he_HT_conditions, hp_secondary_fluid_LT, he_HT_conditions, hp_secondary_fluid_LT)
     
-    assert part_comp.inlet.temperature == pytest.approx(
+    assert dummy_hp.part_comp.inlet.temperature == pytest.approx(
         compressor_conditions['inlet_temperature'])
-    assert part_comp.inlet.pressure == pytest.approx(
+    assert dummy_hp.part_comp.inlet.pressure == pytest.approx(
         compressor_conditions['inlet_pressure'])
-    assert part_comp.inlet.enthalpy == pytest.approx(423610,rel=1e-3)
+    assert dummy_hp.part_comp.inlet.enthalpy == pytest.approx(423610,rel=1e-3)
     
     
 def test_compressor_constant_is_eff(dummy_comp, hp_case_specific, compressor_conditions):
