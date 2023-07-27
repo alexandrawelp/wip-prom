@@ -129,6 +129,7 @@ def test_set_up(dummy_hp, hp_definition, compressor_conditions, hp_working_fluid
                 hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT):
     dummy_hp.set_up(hp_definition, compressor_conditions, hp_working_fluid, 
                hp_case_specific, he_HT_conditions, hp_secondary_fluid_LT, he_HT_conditions, hp_secondary_fluid_LT)
+    dummy_hp.diagram()
     
     assert dummy_hp.part_comp.inlet.temperature == pytest.approx(
         compressor_conditions['inlet_temperature'])

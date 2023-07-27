@@ -7,6 +7,7 @@ general structure of Carnot battery
 import fluid_props
 from scipy.integrate import solve_bvp
 import numpy as np
+import matplotlib.pyplot as plt
 import sys
 sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
 import fluid_properties_rp as fprop
@@ -55,8 +56,119 @@ class HeatPump(CarnotBattery):
         self.part_he_LT.input_heat_exchanger(self.part_throttle.outlet, self.part_he_LT.secondary_fluid.properties)
         self.part_he_LT.call_heat_exchanger(hp_case_specific)
     
-    
+    def diagram(self, parameter1='temperature', parameter2='entropy'):
+        # plot state points:
+            # 1: heat exchanger LT outlet, compressor inlet
+            # 2: compressor outlet, heat exchanger HT inlet
+            # 3: heat exchanger HT outlet, throttle inlet
+            # 4: throttle outlet, heat exchanger LT inlet
+        point_label = ['1', '2', '3', '4']
+        parts = [self.part_comp, self.part_he_HT, self.part_throttle, self.part_he_LT]
+        number_points = len(point_label)
+        y = []
+        x = []
+        for i in range(number_points):
+            y.append(parts[i].inlet.temperature)
+            x.append(parts[i].inlet.entropy)
+        plt.figure(1)
+        for i in range(len(x)):
+            plt.plot(x[i], y[i], '*', markersize=15)
+            plt.annotate(point_label[i], (x[i]+5, y[i]), fontsize=12)
+        plt.xlabel('entropy')
+        plt.ylabel('temperature')
+        plt.legend()
+        # Berechnung des Nassdampfbereichs #
+        s_i = []
+        s_j = []
+        t_step = np.linspace(200, 442, 50)
+        for t_i in t_step:
+            help_var = fprop.T_prop_sat(t_i, self.fluid_name, self.comp)
+            s_i1 = help_var[0, 4]
+            s_i2 = help_var[1, 4]
+            s_i.append(s_i1)
+            s_j.append(s_i2)
+
+        plt.plot(s_i, t_step, 'k-')
+        plt.plot(s_j, t_step, 'k-', label="wet steam region")
+        #plt.xlabel('s in J/kg/K')
+        #plt.ylabel('T in K')
+        plt.title('T-s-Diagramm für ' + self.fluid_name)
+        plt.legend()
+        plt.figure(2)
+        x2 = []
+        for i in range(number_points):
+            x2.append(parts[i].inlet.enthalpy)
+        for i in range(len(x)):
+            plt.plot(x2[i], y[i], '*', markersize=15)
+            plt.annotate(point_label[i], (x[i]+5, y[i]), fontsize=12)
+        plt.xlabel('enthalpy')
+        plt.ylabel('temperature')
         
+    
+        plt.show()
+        
+
+# =============================================================================
+#         # h_dot-T diagram
+#         x2 = np.array([h_1, h_2, h_2b, h_2c, h_3, h_4, h_4b, h_4c])
+#         x2 = m_dot * x2
+#         plt.figure(2)
+#         for i in range(len(x2)):
+#             plt.plot(x2[i], y[i], '*', markersize=15)
+#             plt.annotate(point_label[i], (x2[i]+25, y[i]), fontsize=12)
+#         plt.xlabel("h_dot in J/s")
+#         plt.ylabel("T in K")
+#         plt.legend()
+# 
+#         # Berechnung des Nassdampfbereichs #
+#         h_i = []
+#         h_j = []
+#         t_step = np.linspace(250, 442, 50)
+#         for t_i in t_step:
+#             h_i1 = CP.PropsSI('H', 'T', t_i, 'Q', 0, fluid)
+#             h_i2 = CP.PropsSI('H', 'T', t_i, 'Q', 1, fluid)
+#             h_i.append(h_i1)
+#             h_j.append(h_i2)
+# 
+#         plt.plot(np.array(h_i) * m_dot, t_step, 'k-')
+#         plt.plot(np.array(h_j) * m_dot, t_step, 'k-', label="wet steam region")
+#         #plt.xlabel('h in J/kg')
+#         #plt.ylabel('T in K')
+#         plt.title('T-h-Diagramm für ' + fluid)
+# 
+#         # Berechnung Isobare #
+#         h_step = np.linspace(0, 700000, 100)
+#         for px in [p_o, p_c]:
+#             t_isobar = []
+#             for hi in h_step:
+#                 t_iso = CP.PropsSI('T', 'H', hi, 'P', px, fluid)
+#                 t_isobar.append(t_iso)
+# 
+#             plt.plot(h_step * m_dot, t_isobar, 'b:', label="isobare")
+#         plt.legend()
+# 
+#         # adding secondary fluids to plot figure 2
+#         x_sec_evap = np.linspace(h_4 * m_dot, (h_4 + delta_h_o) * m_dot, 100)
+#         y_sec_evap = np.linspace(T_evap_out, T_evap_in, 100)
+#         plt.plot(x_sec_evap, y_sec_evap, 'b')
+# 
+#         x_sec_sc = np.linspace(h_3 * m_dot, (h_3 + delta_h_sc) * m_dot, 100)
+#         y_sec_sc = np.linspace(T_sc_in, T_sc_out, 100)
+#         plt.plot(x_sec_sc, y_sec_sc, 'r')
+# 
+#         x_sec_ws = np.linspace(h_2c * m_dot, (h_2c + delta_h_ws) * m_dot, 100)
+#         y_sec_ws = np.linspace(T_ws_in, T_ws_out, 100)
+#         plt.plot(x_sec_ws, y_sec_ws, 'r')
+# 
+#         x_sec_sh = np.linspace(h_2b * m_dot, (h_2b + delta_h_sh) * m_dot, 100)
+#         y_sec_sh = np.linspace(T_sh_in, T_sh_out, 100)
+#         plt.plot(x_sec_sh, y_sec_sh, 'r')
+# 
+# 
+# 
+#         plt.show()
+#         
+# =============================================================================
         
                 
 ##############################################################################
