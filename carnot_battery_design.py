@@ -35,10 +35,26 @@ class HeatPump(CarnotBattery):
         
         
     def set_up(self, hp_definition, compressor_conditions, hp_working_fluid, 
-               hp_case_specific):
+               hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT):
         part_comp = Compressor(hp_definition, compressor_conditions, 
                                hp_working_fluid, hp_case_specific)
-        return part_comp
+        part_comp.call_compressor(hp_case_specific)
+        part_he_HT = HeatExchanger(he_HT_conditions, hp_secondary_fluid_HT, hp_definition, 
+                     compressor_conditions, hp_working_fluid, hp_case_specific)
+        part_he_HT.secondary_fluid.set_state([hp_secondary_fluid_HT['inlet_temperature'], 
+                                        hp_secondary_fluid_HT['inlet_pressure']], 'TP')
+        part_he_HT.input_heat_exchanger(part_comp.outlet, part_he_HT.secondary_fluid.properties)
+        part_he_HT.call_heat_exchanger(hp_case_specific)
+        part_throttle = Expander(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
+        part_throttle.input_expander(part_he_HT.outlet)
+        part_throttle.call_expander()
+        part_he_LT = HeatExchanger(he_LT_conditions, hp_secondary_fluid_LT, hp_definition, 
+                     compressor_conditions, hp_working_fluid, hp_case_specific)
+        part_he_LT.secondary_fluid.set_state([hp_secondary_fluid_LT['inlet_temperature'], 
+                                        hp_secondary_fluid_LT['inlet_pressure']], 'TP')
+        part_he_LT.input_heat_exchanger(part_throttle.outlet, part_he_LT.secondary_fluid.properties)
+        part_he_LT.call_heat_exchanger(hp_case_specific)
+        return part_comp, part_he_HT, part_throttle, part_he_LT
         
                 
 ##############################################################################
@@ -58,7 +74,7 @@ class HeatExchanger(HeatPump):
     def call_heat_exchanger(self, hp_case_specific):
         # choice of heat exchanger
         if self.heat_exchanger_HT == 'double_tube_he_counterflow':
-            self.double_tube_he_counterflow()
+            self.he_counter_current()
         else:
             raise NameError('heat exchanger model not implemented')
     
@@ -204,17 +220,29 @@ if __name__ == '__main__':
         'comp' : [0.4, 0.6]
         }
     
-    hp_secondary_fluid = {
+    hp_secondary_fluid_HT = {
         'fluid' : 'Water',
         'inlet_temperature' : 285., 
         'inlet_pressure' : 1e5
         }
+    
+    hp_secondary_fluid_LT = {
+        'fluid' : 'Water',
+        'inlet_temperature' : 288.15,
+        'inlet_pressure' : 1e5}
     
     he_HT_conditions = {
         'length' : 6.,
         'inner_diameter' : 12e-3,
         'alpha' : 600.,
         'mass flow' : 0.1
+        }
+    
+    he_LT_conditions = {
+        'length' : 6., 
+        'inner diameter' : 12e-3,
+        'alpha' : 400,
+        'mass flow' : 0.15
         }
     
     # case specific conditions

@@ -53,13 +53,13 @@ def compressor_conditions():
     return compressor_conditions
 
 @pytest.fixture
-def hp_secondary_fluid():
-    hp_secondary_fluid = {
+def hp_secondary_fluid_HT():
+    hp_secondary_fluid_HT = {
         'fluid' : 'Water',
         'inlet_temperature' : 285., 
         'inlet_pressure' : 1e5
         }
-    return hp_secondary_fluid
+    return hp_secondary_fluid_HT
 
 @pytest.fixture 
 def he_HT_conditions():
@@ -70,6 +70,24 @@ def he_HT_conditions():
         'mass_flow' : 0.1
         }
     return he_HT_conditions
+    
+@pytest.fixture 
+def hp_secondary_fluid_LT():     
+    hp_secondary_fluid_LT = {
+        'fluid' : 'Water',
+        'inlet_temperature' : 288.15,
+        'inlet_pressure' : 1e5}
+    return hp_secondary_fluid_LT
+
+@pytest.fixture 
+def he_LT_conditions():
+    he_LT_conditions = {
+        'length' : 6., 
+        'inner diameter' : 12e-3,
+        'alpha' : 400,
+        'mass flow' : 0.15
+        }
+    return he_LT_conditions
     
 ### set-up dummy classes #####################################################
 @pytest.fixture
@@ -87,9 +105,9 @@ def dummy_comp(hp_definition, compressor_conditions, hp_working_fluid,
     return dummy
 
 @pytest.fixture 
-def dummy_co_he(he_HT_conditions, hp_secondary_fluid, hp_definition, 
+def dummy_co_he(he_HT_conditions, hp_secondary_fluid_HT, hp_definition, 
                 compressor_conditions, hp_working_fluid, hp_case_specific):
-    dummy = HeatExchanger(he_HT_conditions, hp_secondary_fluid, hp_definition, 
+    dummy = HeatExchanger(he_HT_conditions, hp_secondary_fluid_HT, hp_definition, 
                           compressor_conditions, hp_working_fluid, hp_case_specific)
     return dummy
 
@@ -108,9 +126,9 @@ def test_initialization(dummy_hp):
     
     
 def test_set_up(dummy_hp, hp_definition, compressor_conditions, hp_working_fluid, 
-                hp_case_specific):
-    part_comp = dummy_hp.set_up(hp_definition, compressor_conditions, 
-                                hp_working_fluid, hp_case_specific)
+                hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT):
+    part_comp, part_he_HT, part_throttle, part_he_LT= dummy_hp.set_up(hp_definition, compressor_conditions, hp_working_fluid, 
+               hp_case_specific, he_HT_conditions, hp_secondary_fluid_LT, he_HT_conditions, hp_secondary_fluid_LT)
     
     assert part_comp.inlet.temperature == pytest.approx(
         compressor_conditions['inlet_temperature'])
@@ -139,19 +157,28 @@ def test_isenthalpic_throttle(dummy_expa, hp_working_fluid):
     assert dummy_expa.outlet.temperature == pytest.approx(261.83)
     
     
-def test_counterflow_he(dummy_co_he, hp_working_fluid, hp_secondary_fluid):
+def test_counterflow_he(dummy_co_he, hp_working_fluid, hp_secondary_fluid_HT):
     fluid_model = fluid_props.FluidModel(hp_working_fluid['fluid'])
     working_fluid = fluid_props.Fluid(fluid_model, hp_working_fluid['comp'])
     working_fluid.set_state([374., 6e5], 'TP')
     inlet_state = working_fluid.properties
     
-    sf_model = fluid_props.FluidModel(hp_secondary_fluid['fluid'])
+    sf_model = fluid_props.FluidModel(hp_secondary_fluid_HT['fluid'])
     sf_fluid = fluid_props.Fluid(sf_model)
     sf_fluid.set_state([280., 1e5], 'TP')
     inlet_sf_fluid = sf_fluid.properties
     
     dummy_co_he.input_heat_exchanger(inlet_state, inlet_sf_fluid)
     dummy_co_he.he_counter_current()
+    
+def test_call_expander(dummy_expa, hp_working_fluid):
+    fluid_model = fluid_props.FluidModel(hp_working_fluid['fluid'])
+    working_fluid = fluid_props.Fluid(fluid_model, hp_working_fluid['comp'])
+    working_fluid.set_state([295., 6e5], 'TP')
+    inlet_state = working_fluid.properties
+    dummy_expa.input_expander(inlet_state)
+    dummy_expa.call_expander()
+    
     
     
     
