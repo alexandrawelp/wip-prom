@@ -99,6 +99,13 @@ class HeatPump(CarnotBattery):
         plt.title('T-s-diagram of ' + self.fluid_name)
         plt.legend()
         
+        s_var = np.linspace(self.part_he_HT.inlet.entropy, self.part_he_HT.outlet.entropy, 100)
+        t_var = []
+        for si in s_var:
+            Ti = fprop.sp(si, self.higher_pressure)[0]
+            t_var.append(Ti)
+            
+        plt.plot(s_var, t_var, 'r-')
         
         plt.figure(2)
         x2 = []
