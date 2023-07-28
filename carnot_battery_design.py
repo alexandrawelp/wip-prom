@@ -12,6 +12,7 @@ import sys
 sys.path.insert(1, "C:/Users/welp/sciebo/Kollaboration/Carbatpy/carbatpy/carbatpy")
 import fluid_properties_rp as fprop
 
+
 class CarnotBattery:
     def __init__(self, name):
         self.name == name
@@ -56,7 +57,7 @@ class HeatPump(CarnotBattery):
         self.part_he_LT.input_heat_exchanger(self.part_throttle.outlet, self.part_he_LT.secondary_fluid.properties)
         self.part_he_LT.call_heat_exchanger(hp_case_specific)
     
-    def diagram(self, parameter1='temperature', parameter2='entropy'):
+    def diagram(self):
         # plot state points:
             # 1: heat exchanger LT outlet, compressor inlet
             # 2: compressor outlet, heat exchanger HT inlet
@@ -73,38 +74,45 @@ class HeatPump(CarnotBattery):
         plt.figure(1)
         for i in range(len(x)):
             plt.plot(x[i], y[i], '*', markersize=15)
-            plt.annotate(point_label[i], (x[i]+5, y[i]), fontsize=12)
+            plt.annotate(point_label[i], (x[i]+15, y[i]), fontsize=12)
         plt.xlabel('entropy')
         plt.ylabel('temperature')
         plt.legend()
         # Berechnung des Nassdampfbereichs #
-        s_i = []
-        s_j = []
-        t_step = np.linspace(200, 442, 50)
+        s_i = [] ; s_j = [] ; h_i = [] ; h_j = []
+        t_step = np.linspace(min(y)-50, fprop.T_crit(self.fluid_name, self.comp), 100)
         for t_i in t_step:
             help_var = fprop.T_prop_sat(t_i, self.fluid_name, self.comp)
             s_i1 = help_var[0, 4]
             s_i2 = help_var[1, 4]
+            h_i1 = help_var[0, 2]
+            h_i2 = help_var[1, 2]
             s_i.append(s_i1)
             s_j.append(s_i2)
+            h_i.append(h_i1)
+            h_j.append(h_i2)
 
         plt.plot(s_i, t_step, 'k-')
         plt.plot(s_j, t_step, 'k-', label="wet steam region")
         #plt.xlabel('s in J/kg/K')
         #plt.ylabel('T in K')
-        plt.title('T-s-Diagramm für ' + self.fluid_name)
+        plt.title('T-s-diagram of ' + self.fluid_name)
         plt.legend()
+        
+        
         plt.figure(2)
         x2 = []
         for i in range(number_points):
             x2.append(parts[i].inlet.enthalpy)
         for i in range(len(x)):
             plt.plot(x2[i], y[i], '*', markersize=15)
-            plt.annotate(point_label[i], (x[i]+5, y[i]), fontsize=12)
+            plt.annotate(point_label[i], (x2[i]+15, y[i]), fontsize=12)
         plt.xlabel('enthalpy')
         plt.ylabel('temperature')
-        
-    
+        plt.plot(h_i, t_step, 'k-')
+        plt.plot(h_j, t_step, 'k-', label="wet steam region")
+        plt.title('T-h-diagram of ' + self.fluid_name)
+        plt.legend()
         plt.show()
         
 
@@ -349,14 +357,14 @@ if __name__ == '__main__':
         'length' : 6.,
         'inner_diameter' : 12e-3,
         'alpha' : 600.,
-        'mass flow' : 0.1
+        'mass_flow' : 0.1
         }
     
     he_LT_conditions = {
         'length' : 6., 
-        'inner diameter' : 12e-3,
+        'inner_diameter' : 12e-3,
         'alpha' : 400,
-        'mass flow' : 0.15
+        'mass_flow' : 0.15
         }
     
     # case specific conditions
@@ -372,4 +380,6 @@ if __name__ == '__main__':
     #test1.set_up(hp_conditions)
     test2 = Compressor(hp_definition, compressor_conditions, hp_working_fluid, 
                        hp_case_specific)
+    test1.set_up(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific, he_HT_conditions, hp_secondary_fluid_HT, he_LT_conditions, hp_secondary_fluid_LT)
     # connecting parts
+    test1.diagram()
