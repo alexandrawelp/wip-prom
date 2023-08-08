@@ -71,13 +71,13 @@ class HeatPump(CarnotBattery):
         for i in range(number_points):
             y.append(parts[i].inlet.temperature)
             x.append(parts[i].inlet.entropy)
-        plt.figure(1)
+        ax1 = plt.subplot(1, 2, 1)
         for i in range(len(x)):
-            plt.plot(x[i], y[i], '*', markersize=15)
-            plt.annotate(point_label[i], (x[i]+15, y[i]), fontsize=12)
-        plt.xlabel('entropy')
-        plt.ylabel('temperature')
-        plt.legend()
+            ax1.plot(x[i], y[i], '*', markersize=15)
+            ax1.annotate(point_label[i], (x[i]+15, y[i]), fontsize=12)
+        ax1.set_xlabel('entropy')
+        ax1.set_ylabel('temperature')
+        ax1.legend()
         # Berechnung des Nassdampfbereichs #
         s_i = [] ; s_j = [] ; h_i = [] ; h_j = []
         t_step = np.linspace(min(y)-50, fprop.T_crit(self.fluid_name, self.comp), 100)
@@ -92,12 +92,12 @@ class HeatPump(CarnotBattery):
             h_i.append(h_i1)
             h_j.append(h_i2)
 
-        plt.plot(s_i, t_step, 'k-')
-        plt.plot(s_j, t_step, 'k-', label="wet steam region")
+        ax1.plot(s_i, t_step, 'k-')
+        ax1.plot(s_j, t_step, 'k-', label="wet steam region")
         #plt.xlabel('s in J/kg/K')
         #plt.ylabel('T in K')
-        plt.title('T-s-diagram of ' + self.fluid_name)
-        plt.legend()
+        ax1.set_title('T-s-diagram of ' + self.fluid_name)
+        ax1.legend()
         
         s_var = np.linspace(self.part_he_HT.inlet.entropy, self.part_he_HT.outlet.entropy, 100)
         t_var = []
@@ -105,21 +105,21 @@ class HeatPump(CarnotBattery):
             Ti = fprop.sp(si, self.higher_pressure)[0]
             t_var.append(Ti)
             
-        plt.plot(s_var, t_var, 'r-')
+        ax1.plot(s_var, t_var, 'r-')
         
-        plt.figure(2)
+        ax2 = plt.subplot(1, 2, 2)
         x2 = []
         for i in range(number_points):
             x2.append(parts[i].inlet.enthalpy)
         for i in range(len(x)):
-            plt.plot(x2[i], y[i], '*', markersize=15)
-            plt.annotate(point_label[i], (x2[i]+15, y[i]), fontsize=12)
-        plt.xlabel('enthalpy')
-        plt.ylabel('temperature')
-        plt.plot(h_i, t_step, 'k-')
-        plt.plot(h_j, t_step, 'k-', label="wet steam region")
-        plt.title('T-h-diagram of ' + self.fluid_name)
-        plt.legend()
+            ax2.plot(x2[i], y[i], '*', markersize=15)
+            ax2.annotate(point_label[i], (x2[i]+15, y[i]), fontsize=12)
+        ax2.set_xlabel('enthalpy')
+        ax2.set_ylabel('temperature')
+        ax2.plot(h_i, t_step, 'k-')
+        ax2.plot(h_j, t_step, 'k-', label="wet steam region")
+        ax2.set_title('T-h-diagram of ' + self.fluid_name)
+        ax2.legend()
         plt.show()
         
 
