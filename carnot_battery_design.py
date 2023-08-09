@@ -75,8 +75,8 @@ class HeatPump(CarnotBattery):
         for i in range(len(x)):
             ax1.plot(x[i], y[i], '*', markersize=15)
             ax1.annotate(point_label[i], (x[i]+15, y[i]), fontsize=12)
-        ax1.set_xlabel('entropy')
-        ax1.set_ylabel('temperature')
+        ax1.set_xlabel('entropy in J/kgK')
+        ax1.set_ylabel('temperature in K')
         ax1.legend()
         # Berechnung des Nassdampfbereichs #
         s_i = [] ; s_j = [] ; h_i = [] ; h_j = []
@@ -102,7 +102,15 @@ class HeatPump(CarnotBattery):
         s_var = np.linspace(self.part_he_HT.inlet.entropy, self.part_he_HT.outlet.entropy, 100)
         t_var = []
         for si in s_var:
-            Ti = fprop.sp(si, self.higher_pressure)[0]
+            Ti = fprop.sp(si, self.higher_pressure, self.fluid_name, self.comp)[0]
+            t_var.append(Ti)
+            
+        ax1.plot(s_var, t_var, 'r-')
+        
+        s_var = np.linspace(self.part_he_LT.inlet.entropy, self.part_he_LT.outlet.entropy, 100)
+        t_var = []
+        for si in s_var:
+            Ti = fprop.sp(si, self.lower_pressure, self.fluid_name, self.comp)[0]
             t_var.append(Ti)
             
         ax1.plot(s_var, t_var, 'r-')
@@ -114,12 +122,28 @@ class HeatPump(CarnotBattery):
         for i in range(len(x)):
             ax2.plot(x2[i], y[i], '*', markersize=15)
             ax2.annotate(point_label[i], (x2[i]+15, y[i]), fontsize=12)
-        ax2.set_xlabel('enthalpy')
-        ax2.set_ylabel('temperature')
+        ax2.set_xlabel('enthalpy in J/kg')
+        ax2.set_ylabel('temperature in K')
         ax2.plot(h_i, t_step, 'k-')
         ax2.plot(h_j, t_step, 'k-', label="wet steam region")
         ax2.set_title('T-h-diagram of ' + self.fluid_name)
         ax2.legend()
+        h_var = np.linspace(self.part_he_HT.inlet.enthalpy, self.part_he_HT.outlet.enthalpy, 100)
+        t_var = []
+        for hi in h_var:
+            Ti = fprop.hp(hi, self.higher_pressure, self.fluid_name, self.comp)[0]
+            t_var.append(Ti)
+            
+        ax2.plot(h_var, t_var, 'r-')
+        
+        h_var = np.linspace(self.part_he_LT.inlet.enthalpy, self.part_he_LT.outlet.enthalpy, 100)
+        t_var = []
+        for hi in h_var:
+            Ti = fprop.hp(hi, self.lower_pressure, self.fluid_name, self.comp)[0]
+            t_var.append(Ti)
+        ax2.plot(h_var, t_var, 'r-')
+        
+        
         plt.show()
         
 
