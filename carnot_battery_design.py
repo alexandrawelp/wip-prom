@@ -46,7 +46,7 @@ class HeatPump(CarnotBattery):
         self.part_he_HT.secondary_fluid.set_state([hp_secondary_fluid_HT['inlet_temperature'], 
                                         hp_secondary_fluid_HT['inlet_pressure']], 'TP')
         self.part_he_HT.input_heat_exchanger(self.part_comp.outlet, self.part_he_HT.secondary_fluid.properties)
-        self.part_he_HT.call_heat_exchanger(hp_case_specific)
+        self.part_he_HT.call_heat_exchanger(self.heat_exchanger_HT)
         self.part_throttle = Expander(hp_definition, compressor_conditions, hp_working_fluid, hp_case_specific)
         self.part_throttle.input_expander(self.part_he_HT.outlet)
         self.part_throttle.call_expander()
@@ -55,7 +55,7 @@ class HeatPump(CarnotBattery):
         self.part_he_LT.secondary_fluid.set_state([hp_secondary_fluid_LT['inlet_temperature'], 
                                         hp_secondary_fluid_LT['inlet_pressure']], 'TP')
         self.part_he_LT.input_heat_exchanger(self.part_throttle.outlet, self.part_he_LT.secondary_fluid.properties)
-        self.part_he_LT.call_heat_exchanger(hp_case_specific)
+        self.part_he_LT.call_heat_exchanger(self.heat_exchanger_LT, self.part_comp.inlet.enthalpy, self.part_comp.inlet.temperature)
     
     def diagram(self):
         # plot state points:
@@ -224,10 +224,12 @@ class HeatExchanger(HeatPump):
         self.secondary_fluid = fluid_props.Fluid(self.sf_model)
         self.sf_mdot = he_conditions['mass_flow']
         
-    def call_heat_exchanger(self, hp_case_specific):
+    def call_heat_exchanger(self, case, *wf_out):
         # choice of heat exchanger
-        if self.heat_exchanger_HT == 'double_tube_he_counterflow':
+        if case == 'double_tube_he_counterflow':
             self.he_counter_current()
+        elif case == 'get length for stationary state':
+            self.LMTD_l(wf_out[0], wf_out[1])
         else:
             raise NameError('heat exchanger model not implemented')
     
@@ -274,7 +276,22 @@ class HeatExchanger(HeatPump):
         self.outlet = self.working_fluid.properties 
         self.secondary_fluid.set_state([res.y[1,-1], self.sf_inlet.pressure], 'HP')
         self.sf_outlet = self.secondary_fluid.properties
-            
+        
+    def LMTD_l(self, wf_output_enthalpy, wf_output_temperature):
+        self.working_fluid.set_state([wf_output_enthalpy, wf_output_temperature], 'HT')
+        self.outlet = self.working_fluid.properties 
+        h_out_sf = self.sf_inlet.enthalpy - self.mdot * \
+            (wf_output_enthalpy - self.inlet.enthalpy) / self.sf_mdot 
+        self.secondary_fluid.set_state([h_out_sf, self.sf_inlet.pressure], 'HP')
+        self.sf_outlet = self.secondary_fluid.properties 
+        
+        dT_left = self.sf_outlet.temperature - self.inlet.temperature
+        dT_right =self.sf_inlet.temperature - wf_output_temperature
+        
+        LMTD = (dT_left - dT_right) / np.log(dT_left / dT_right)
+        self.length = self.mdot * (self.outlet.enthalpy - self.inlet.enthalpy) \
+            / (self.alpha * LMTD * np.pi * self.di)
+        
 ##############################################################################
 class Storage(HeatPump):
     def __init__(self):
@@ -357,7 +374,7 @@ if __name__ == '__main__':
         'expander' : 'isenthalp_throttle',
         'heat_exchanger_HT' : 'double_tube_he_counterflow',
         'storage_LT' : 'sensible_two_tank',
-        'heat_exchanger_LT' : 'double_tube_he_counterflow',
+        'heat_exchanger_LT' : 'get length for stationary state',
         'storage_HT' : 'sensible_two_tank',
         'mass_flow' : 10e-3
         }
